@@ -14,7 +14,8 @@ from esmvaltool.diag_scripts.shared import (
 )
 from esmvalcore.preprocessor import (
     climate_statistics,
-    regrid
+    regrid,
+    concatenate
 )
 
 
@@ -56,48 +57,34 @@ def calc_trend(xarr, start, end, length):
     return trnarr
 
 
-def get_provenance_record(caption, ancestor_files):
-    """Create a provenance record describing the diagnostic data and plot."""
-
-    record = {
-        "caption": caption,
-        "statistics": ["other"],
-        "domains": ["polar"],
-        "plot_types": ["map"],
-        "authors": [
-            "chun_felicity",
-        ],
-        "references": [
-            "access-nri",
-        ],
-        "ancestors": ancestor_files,
-    }
-    return record
-
-
 def main(cfg):
     """run on all datasets"""
 
     input_data = cfg["input_data"].values()
+    ## group by dataset to concatenate future to historical after ensemble means
+    # for dataset, attributes in group_metadata(input_data,"dataset", sort='exp').items():
+    #     in_files = [d['filename'] for d in attributes]
+    #     cubes = iris.load(in_files)
+    #     start_year = min([d['start_year'] for d in attributes]) 
+    #     end_year = max([d['end_year'] for d in attributes])
+        
+    #     logger.info(f"Loaded {len(cubes)} cubes for {dataset}, {start_year} - {end_year}")
+    #     iris.util.equalise_attributes(cubes)
+    #     cube = concatenate(cubes)
 
+    ## keep future variable separate 
     for dataset in input_data:
-        # Load the data
         input_file = dataset['filename']
         name = dataset['dataset'] + '_' + dataset['exp']
         cube = iris.load_cube(input_file)
+        start_year, end_year = dataset['start_year'], dataset['end_year']
+        ##
 
-        data=xr.DataArray.from_iris(cube)
-        ds_model_ann=data.groupby('time.year').mean('time')
+        data = xr.DataArray.from_iris(cube)
+        ds_model_ann = data.groupby('time.year').mean('time')
+        ds_model_ann_trend_31 = calc_trend(ds_model_ann, start_year, end_year-31, 31)
 
-        ds_model_ann_trend_31 = calc_trend(ds_model_ann, dataset['start_year'], dataset['end_year']-31, 31)
-        
-        # Save output
-        # prov_record = get_provenance_record(
-        #     f'Barotropic streamfunction from {name}.',
-        #     [input_file],
-        # )
-        # get work dir
-        ds_model_ann_trend_31.to_netcdf(os.path.join(cfg["work_dir"], f"{name}_trend_31yr{dataset['start_year']}_{dataset['end_year']-31}.nc"))
+        ds_model_ann_trend_31.to_netcdf(os.path.join(cfg["work_dir"], f"{dataset}_trend_31yr{start_year}_{end_year-31}.nc"))
 
 if __name__ == "__main__":
     with run_diagnostic() as config:

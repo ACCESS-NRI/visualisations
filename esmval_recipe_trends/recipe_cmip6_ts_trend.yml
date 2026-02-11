@@ -1,0 +1,79 @@
+# ESMValTool
+# 
+---
+documentation:
+  description: multi model cmip6 statistics
+  title: CMIP6 ts trends
+  authors:
+    - chun_felicity
+  maintainer:
+    - chun_felicity
+
+# datasets:
+  # - project: CMIP6
+  #   exp: SSP370
+  #   dataset: '*'
+  #   institute: '*'
+  #   ensemble: 'r*i1p1f1'
+  #   grid: gn
+
+overlap: &models
+  - {dataset: ACCESS-ESM1-5, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: ACCESS-CM2, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: BCC-CSM2-MR, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: CAS-ESM2-0, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: CESM2-WACCM, project: CMIP6, ensemble: '*', grid: gn} # missing years in ensembles r2,3
+  - {dataset: CMCC-CM2-SR5, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: CMCC-ESM2, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: CanESM5, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: FGOALS-g3, project: CMIP6, ensemble: '*', grid: gn}
+  # - {dataset: IITM-ESM, project: CMIP6, ensemble: '*', grid: gn, start_year: '*', end_year: 2098} ##not in historical
+  - {dataset: MIROC6, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: MPI-ESM-1-2-HAM, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: MRI-ESM2-0, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: NorESM2-LM, project: CMIP6, ensemble: '*', grid: gn} # missing years in ensembles r2,3
+  - {dataset: NorESM2-MM, project: CMIP6, ensemble: '*', grid: gn}
+  - {dataset: TaiESM1, project: CMIP6, ensemble: '*', grid: gn}
+
+
+preprocessors:
+  all_preprocessor:
+    regrid:
+      target_grid: 1x1
+      scheme: linear
+    ensemble_statistics:
+      statistics: [mean]
+
+
+diagnostics:
+  diagnostic_metrics:
+    description: run ts in groups future, historical and obs
+    variables:
+      ts_future:
+        short_name: ts
+        mip: Amon
+        activity: ScenarioMIP
+        exp: ssp370
+        timerange: '*'
+        preprocessor: all_preprocessor
+        additional_datasets: *models
+
+      ts_obs:
+        short_name: ts
+        mip: Amon
+        timerange: '*'
+        additional_datasets:
+          - {dataset: HadISST, project: OBS, type: reanaly, tier: 2, version: 1}
+
+      ts:
+        mip: Amon
+        exp: historical
+        timerange: '*'
+        preprocessor: all_preprocessor
+        additional_datasets: *models
+
+    scripts:
+      trends:
+        script: trends.py #update filepath or run in folder
+
+
